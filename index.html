@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Stats Dashboard</title>
+    <!-- Chart.js para las gráficas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #1db954;
+            font-size: 32px;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #b3b3b3;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .card {
+            background-color: #181818;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #282828;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .card h2 {
+            color: #1db954;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Sección del botón Spotify extra */
+        .spotify-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            background: linear-gradient(90deg, #181818 0%, #203a27 100%);
+        }
+
+        .btn-spotify-wrapped {
+            background-color: #1db954;
+            color: #000;
+            font-weight: bold;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .btn-spotify-wrapped:hover {
+            background-color: #1ed760;
+            transform: scale(1.02);
+        }
+
+        /* Formulario Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group-full {
+            grid-column: span 2;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            background-color: #282828;
+            border: 1px solid #3e3e3e;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #1db954;
+        }
+
+        .btn-save {
+            background-color: #1db954;
+            color: #000;
+            font-weight: bold;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-save:hover {
+            background-color: #1ed760;
+        }
+
+        /* Tabla de canciones */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid #282828;
+        }
+
+        th {
+            color: #b3b3b3;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #222;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Spotify Stats Dashboard</h1>
+    <p class="subtitle">Estadísticas de reproducción de canciones</p>
+
+    <div class="container">
+
+        <!-- BLOQUE EXTRA: Botón para importar datos desde Spotify -->
+        <div class="card spotify-bar">
+            <div>
+                <strong style="font-size: 15px;">¿Tienes tu cuenta de Spotify conectada?</strong>
+                <p style="font-size: 12px; color: #b3b3b3;">Carga tus canciones directamente para no registrarlas manualmente.</p>
+            </div>
+            <button id="btn-spotify-sync" class="btn-spotify-wrapped">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141 C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.18-.1.2-1.2-.42-.18-.6.18-1.2.78-1.38 4.26-1.26 11.28-1.02 15.72 1.62.539.3 1.02.3 1.02-.3.18-.6-.3-1.08-.84-1.38z"/>
+                </svg>
+                Generar mi Spotify Wrapped
+            </button>
+        </div>
+
+        <!-- FORMULARIO ORIGINAL -->
+        <div class="card">
+            <h2>Agregar Nueva Canción</h2>
+            <form id="song-form">
+                <div class="form-grid">
+                    <input type="text" id="title" placeholder="Título de la canción" required>
+                    <input type="text" id="artist" placeholder="Artista" required>
+                    <input type="text" id="album" placeholder="Álbum" required>
+                    <input type="number" id="plays" placeholder="Reproducciones" required>
+                    <div class="form-group-full">
+                        <input type="text" id="duration" placeholder="Duración (ej. 3.3 min)" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-save">Guardar Canción</button>
+            </form>
+        </div>
+
+        <!-- GRÁFICA ORIGINAL -->
+        <div class="card">
+            <h2>Top Canciones Reproducidas</h2>
+            <div class="chart-container">
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+
+        <!-- TABLA ORIGINAL -->
+        <div class="card">
+            <h2>Lista de Canciones Registradas</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Artista</th>
+                        <th>Álbum</th>
+                        <th>Reproducciones</th>
+                        <th>Duración</th>
+                    </tr>
+                </thead>
+                <tbody id="songs-table-body">
+                    <!-- Filas dinámicas -->
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        // Array de canciones registradas
+        let songsData = [
+            { title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', plays: 3500, duration: '3.3 min' }
+        ];
+
+        let myChart;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            renderTable();
+
+            // 1. Manejo del Formulario
+            document.getElementById('song-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const title = document.getElementById('title').value;
+                const artist = document.getElementById('artist').value;
+                const album = document.getElementById('album').value;
+                const plays = parseInt(document.getElementById('plays').value) || 0;
+                const duration = document.getElementById('duration').value;
+
+                songsData.push({ title, artist, album, plays, duration });
+                updateDashboard();
+                document.getElementById('song-form').reset();
+            });
+
+            // 2. Integración con el Botón Spotify
+            const urlParams = new URLSearchParams(window.location.search);
+            const accessToken = urlParams.get('access_token');
+            const btnSpotifySync = document.getElementById('btn-spotify-sync');
+
+            btnSpotifySync.addEventListener('click', () => {
+                if (accessToken) {
+                    cargarTopSpotify(accessToken);
+                } else {
+                    window.location.href = 'http://127.0.0.1:5000/api/auth/spotify/login';
+                }
+            });
+
+            // Si viene redirigido con el token de Spotify, rellenamos automáticamente
+            if (accessToken) {
+                cargarTopSpotify(accessToken);
+            }
+        });
+
+        // Inicializar gráfica Chart.js
+        function initChart() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: songsData.map(s => s.title),
+                    datasets: [{
+                        label: 'Reproducciones',
+                        data: songsData.map(s => s.plays),
+                        backgroundColor: '#1db954',
+                        borderColor: '#1ed760',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#b3b3b3' },
+                            grid: { color: '#282828' }
+                        },
+                        x: {
+                            ticks: { color: '#b3b3b3' },
+                            grid: { color: '#282828' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Renderizar la Tabla
+        function renderTable() {
+            const tbody = document.getElementById('songs-table-body');
+            tbody.innerHTML = '';
+            songsData.forEach(song => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${song.title}</b></td>
+                    <td>${song.artist}</td>
+                    <td>${song.album}</td>
+                    <td>${Number(song.plays).toLocaleString()}</td>
+                    <td>${song.duration}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Actualizar datos
+        function updateDashboard() {
+            renderTable();
+            myChart.data.labels = songsData.map(s => s.title);
+            myChart.data.datasets[0].data = songsData.map(s => s.plays);
+            myChart.update();
+        }
+
+        // Consulta a la API de Spotify
+        async function cargarTopSpotify(token) {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/spotify/user-wrapped', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.topTracks && data.topTracks.length > 0) {
+                        // Rellenar automáticamente con las canciones reales recibidas de Spotify
+                        songsData = data.topTracks.slice(0, 5).map((track, i) => ({
+                            title: track.name,
+                            artist: track.artists[0].name,
+                            album: track.album.name,
+                            plays: Math.floor(Math.random() * 2000) + 1000 + (5 - i) * 500, // Simulación de reproducciones para la gráfica
+                            duration: `${(track.duration_ms / 60000).toFixed(1)} min`
+                        }));
+                        updateDashboard();
+                    }
+                }
+            } catch (err) {
+                console.error('Error al sincronizar Spotify:', err);
+            }
+        }
+    </script>
+</body>
+</html>
