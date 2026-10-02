@@ -58,8 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
            <input type="password" id="auth-password" placeholder="Contraseña" required>
            <button type="submit">Registrarme</button>`
         : `<input type="email" id="auth-email" placeholder="Correo electrónico" required>
-           <input type="password" id="auth-password" placeholder="Contraseña" required>
-           <button type="submit">Entrar al Dashboard</button>`;
+           <input type="password" id="auth-password" placeholder="Contraseña" required>`;
     }
   });
 
@@ -206,48 +205,77 @@ async function loadSpotifyWrapped(spotifyToken) {
 
     const data = await res.json();
 
-    // Actualizar interfaz del Wrapped
+    // 1. Avatar e Información de usuario
     const userImg = document.getElementById('wrapped-user-img');
-    if (userImg) userImg.src = data.user?.avatar || '';
+    if (userImg) {
+      const avatarUrl = data.user?.avatar || data.user?.images?.[0]?.url || 'https://via.placeholder.com/70?text=User';
+      userImg.src = avatarUrl;
+    }
 
     const userName = document.getElementById('wrapped-user-name');
-    if (userName) userName.innerText = `¡Hola, ${data.user?.displayName || 'Usuario'}!`;
+    if (userName) {
+      const name = data.user?.displayName || data.user?.display_name || 'Usuario';
+      userName.innerText = `¡Hola, ${name}!`;
+    }
 
-    // Canciones principales
+    // 2. Top Canciones (Soporta múltiples estructuras de la API)
     const tracksList = document.getElementById('wrapped-tracks-list');
     if (tracksList && data.topTracks) {
-      tracksList.innerHTML = data.topTracks.map(t => `<li><strong>${t.title}</strong> - ${t.artist}</li>`).join('');
+      tracksList.innerHTML = data.topTracks.map(t => {
+        const title = t.title || t.name || 'Canción sin título';
+        let artistName = 'Artista desconocido';
+        
+        if (typeof t.artist === 'string' && t.artist) {
+          artistName = t.artist;
+        } else if (Array.isArray(t.artists)) {
+          artistName = t.artists.map(a => a.name).join(', ');
+        } else if (t.artists && typeof t.artists === 'string') {
+          artistName = t.artists;
+        }
+
+        return `<li><strong>${title}</strong> - ${artistName}</li>`;
+      }).join('');
     }
 
-    // Artistas principales
+    // 3. Top Artistas (Manejo correcto de imágenes e iconografía)
     const artistsContainer = document.getElementById('wrapped-artists-container');
     if (artistsContainer && data.topArtists) {
-      artistsContainer.innerHTML = data.topArtists.map(a => `
-        <div class="artist-card">
-          <img src="${a.image}" alt="${a.name}">
-          <h4>${a.name}</h4>
-        </div>
-      `).join('');
+      artistsContainer.innerHTML = data.topArtists.map(a => {
+        const imgUrl = a.image || a.images?.[0]?.url || 'https://via.placeholder.com/40?text=🎵';
+        const artistName = a.name || 'Artista';
+        return `
+          <div class="artist-card" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <img src="${imgUrl}" alt="${artistName}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+            <h4 style="margin: 0; font-size: 14px;">${artistName}</h4>
+          </div>
+        `;
+      }).join('');
     }
 
-    // Géneros musicales
+    // 4. Géneros Musicales
     const genresContainer = document.getElementById('wrapped-genres-container');
     if (genresContainer && data.topGenres) {
       genresContainer.innerHTML = data.topGenres.map(g => `<span class="genre-badge">${g}</span>`).join('');
     }
 
-    // Tarjeta de resumen
+    // 5. Tarjeta de Resumen
     const summaryTitle = document.getElementById('summary-user-title');
-    if (summaryTitle) summaryTitle.innerText = `Resumen de ${data.user?.displayName || 'Usuario'}`;
+    if (summaryTitle) {
+      const name = data.user?.displayName || data.user?.display_name || 'Usuario';
+      summaryTitle.innerText = `Resumen de ${name}`;
+    }
 
     const summaryContent = document.getElementById('summary-content');
     if (summaryContent) {
+      const topArtist = data.topArtists?.[0]?.name || 'N/A';
+      const topTrack = data.topTracks?.[0]?.title || data.topTracks?.[0]?.name || 'N/A';
       summaryContent.innerHTML = `
-        <p style="margin-top: 10px;">👑 <strong>Top Artista:</strong> ${data.topArtists?.[0]?.name || 'N/A'}</p>
-        <p style="margin-top: 5px;">🔥 <strong>Top Canción:</strong> ${data.topTracks?.[0]?.title || 'N/A'}</p>
+        <p style="margin-top: 10px;">👑 <strong>Top Artista:</strong> ${topArtist}</p>
+        <p style="margin-top: 5px;">🔥 <strong>Top Canción:</strong> ${topTrack}</p>
       `;
     }
 
+    // Mostrar el contenedor
     const authContainer = document.getElementById('auth-container');
     if (authContainer) authContainer.style.display = 'none';
 
@@ -313,13 +341,11 @@ async function fetchSongs() {
       return;
     }
 
-    // Verificar si la respuesta no fue satisfactoria (ej. error 404 de Render)
     if (!response.ok) {
       console.warn(`La consulta de canciones retornó el estado: ${response.status}`);
       return;
     }
 
-    // Verificar que el tipo de contenido recibido sea JSON antes de parsearlo
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       songsData = await response.json();
