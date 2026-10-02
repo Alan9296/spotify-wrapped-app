@@ -30,9 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSession();
   }
 
-document.getElementById('btn-spotify-login').addEventListener('click', () => {
-  window.location.href = 'https://spotify-wrapped-app-bhh0.onrender.com/api/auth/spotify/login';
-});
+const spotifyBtn = document.getElementById('btn-spotify-login') || document.getElementById('btn-spotify-sync');
+if (spotifyBtn) {
+  spotifyBtn.addEventListener('click', () => {
+    window.location.href = 'https://spotify-wrapped-app-bhh0.onrender.com/api/auth/spotify/login';
+  });
+}
 
   // Cerrar / Reabrir Wrapped
   document.getElementById('btn-close-wrapped').addEventListener('click', closeWrapped);
