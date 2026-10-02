@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (spotifyAccessToken) {
     // Guardar el token para mantener la sesión activa
     localStorage.setItem('token', spotifyAccessToken);
-    // Limpiar URL
+    // Limpiar parámetros de la URL
     window.history.replaceState({}, document.title, window.location.pathname);
     loadSpotifyWrapped(spotifyAccessToken);
   } else {
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Formulario canciones
+  // Formulario de canciones
   const form = document.getElementById('song-form');
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -198,24 +198,28 @@ async function loadSpotifyWrapped(spotifyToken) {
     const res = await fetch(`${API_BASE}/spotify/user-wrapped`, {
       headers: { 'x-spotify-token': spotifyToken }
     });
+    
+    if (!res.ok) {
+      console.warn('Error en la respuesta de Spotify Wrapped:', res.status);
+      return;
+    }
+
     const data = await res.json();
 
-    if (!res.ok) return alert('Error al cargar datos de Spotify');
-
-    // Popular slides del Wrapped
+    // Actualizar interfaz del Wrapped
     const userImg = document.getElementById('wrapped-user-img');
     if (userImg) userImg.src = data.user?.avatar || '';
 
     const userName = document.getElementById('wrapped-user-name');
     if (userName) userName.innerText = `¡Hola, ${data.user?.displayName || 'Usuario'}!`;
 
-    // Tracks
+    // Canciones principales
     const tracksList = document.getElementById('wrapped-tracks-list');
     if (tracksList && data.topTracks) {
       tracksList.innerHTML = data.topTracks.map(t => `<li><strong>${t.title}</strong> - ${t.artist}</li>`).join('');
     }
 
-    // Artists
+    // Artistas principales
     const artistsContainer = document.getElementById('wrapped-artists-container');
     if (artistsContainer && data.topArtists) {
       artistsContainer.innerHTML = data.topArtists.map(a => `
@@ -226,13 +230,13 @@ async function loadSpotifyWrapped(spotifyToken) {
       `).join('');
     }
 
-    // Genres
+    // Géneros musicales
     const genresContainer = document.getElementById('wrapped-genres-container');
     if (genresContainer && data.topGenres) {
       genresContainer.innerHTML = data.topGenres.map(g => `<span class="genre-badge">${g}</span>`).join('');
     }
 
-    // Summary Card
+    // Tarjeta de resumen
     const summaryTitle = document.getElementById('summary-user-title');
     if (summaryTitle) summaryTitle.innerText = `Resumen de ${data.user?.displayName || 'Usuario'}`;
 
@@ -254,8 +258,7 @@ async function loadSpotifyWrapped(spotifyToken) {
     if (reopenBtn) reopenBtn.style.display = 'inline-block';
 
   } catch (err) {
-    console.error(err);
-    alert('Error al conectar con Spotify');
+    console.error('Error al conectar con Spotify:', err);
   }
 }
 
@@ -297,19 +300,35 @@ function checkSession() {
 
 async function fetchSongs() {
   const token = localStorage.getItem('token');
+  if (!token) return;
+
   try {
     const response = await fetch(`${API_BASE}/songs`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
     if (response.status === 401 || response.status === 403) {
       localStorage.clear();
       checkSession();
       return;
     }
-    songsData = await response.json();
-    renderDashboard(songsData);
+
+    // Verificar si la respuesta no fue satisfactoria (ej. error 404 de Render)
+    if (!response.ok) {
+      console.warn(`La consulta de canciones retornó el estado: ${response.status}`);
+      return;
+    }
+
+    // Verificar que el tipo de contenido recibido sea JSON antes de parsearlo
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      songsData = await response.json();
+      renderDashboard(songsData);
+    } else {
+      console.warn('Respuesta recibida no es en formato JSON.');
+    }
   } catch (error) {
-    console.error('Error al obtener canciones:', error);
+    console.error('Error en fetchSongs:', error);
   }
 }
 
@@ -353,7 +372,7 @@ function renderTable(songs) {
       <td>${song.artist}</td>
       <td>${song.album}</td>
       <td>${(song.plays || 0).toLocaleString()}</td>
-      <td>${song.durationMinutes} min</td>
+      <td>${song.durationMinutes || song.duration || 0} min</td>
       <td>
         <button onclick="editSong('${song._id}')" style="background: #eab308; color: black; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; font-weight: bold;">Editar</button>
         <button onclick="deleteSong('${song._id}')" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Eliminar</button>
@@ -393,7 +412,7 @@ function editSong(id) {
   if (document.getElementById('artist')) document.getElementById('artist').value = song.artist;
   if (document.getElementById('album')) document.getElementById('album').value = song.album;
   if (document.getElementById('plays')) document.getElementById('plays').value = song.plays;
-  if (document.getElementById('duration')) document.getElementById('duration').value = song.durationMinutes;
+  if (document.getElementById('duration')) document.getElementById('duration').value = song.durationMinutes || song.duration || '';
   if (document.getElementById('image-url')) document.getElementById('image-url').value = song.imageUrl || '';
 
   const submitBtn = document.getElementById('btn-submit-form');
@@ -463,7 +482,7 @@ function exportToCSV() {
 
   let csvContent = "data:text/csv;charset=utf-8,Titulo,Artista,Album,Reproducciones,Duracion\n";
   songsData.forEach(s => {
-    csvContent += `"${s.title}","${s.artist}","${s.album}",${s.plays},${s.durationMinutes}\n`;
+    csvContent += `"${s.title}","${s.artist}","${s.album}",${s.plays},${s.durationMinutes || s.duration}\n`;
   });
 
   const encodedUri = encodeURI(csvContent);
