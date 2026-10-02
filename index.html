@@ -6,6 +6,10 @@
     <title>Spotify Stats Dashboard</title>
     <!-- Chart.js para las gráficas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Swiper CSS / JS para las diapositivas del Wrapped -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -79,6 +83,7 @@
             align-items: center;
             gap: 8px;
             font-size: 14px;
+            text-decoration: none;
             transition: background-color 0.2s, transform 0.2s;
         }
 
@@ -174,12 +179,12 @@
                 <strong style="font-size: 15px;">¿Tienes tu cuenta de Spotify conectada?</strong>
                 <p style="font-size: 12px; color: #b3b3b3;">Carga tus canciones directamente para no registrarlas manualmente.</p>
             </div>
-            <a id="btn-spotify-login" href="https://spotify-wrapped-app-bhh0.onrender.com/api/auth/spotify/login" class="btn-spotify-wrapped" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.48.66.301 1.02z"/>
-  </svg>
-  Generar mi Spotify Wrapped
-</a>
+            <a id="btn-spotify-login" href="https://spotify-wrapped-app-bhh0.onrender.com/api/auth/spotify/login" class="btn-spotify-wrapped">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.48.66.301 1.02z"/>
+                </svg>
+                Generar mi Spotify Wrapped
+            </a>
         </div>
 
         <!-- FORMULARIO ORIGINAL -->
@@ -195,7 +200,7 @@
                         <input type="text" id="duration" placeholder="Duración (ej. 3.3 min)" required>
                     </div>
                 </div>
-                <button type="submit" class="btn-save">Guardar Canción</button>
+                <button type="submit" id="btn-submit-form" class="btn-save">Guardar Canción</button>
             </form>
         </div>
 
@@ -203,7 +208,7 @@
         <div class="card">
             <h2>Top Canciones Reproducidas</h2>
             <div class="chart-container">
-                <canvas id="myChart"></canvas>
+                <canvas id="songsChart"></canvas>
             </div>
         </div>
 
@@ -228,141 +233,7 @@
 
     </div>
 
-    <script>
-        // Array de canciones registradas
-        let songsData = [
-            { title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', plays: 3500, duration: '3.3 min' }
-        ];
-
-        let myChart;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initChart();
-            renderTable();
-
-            // 1. Manejo del Formulario
-            document.getElementById('song-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const title = document.getElementById('title').value;
-                const artist = document.getElementById('artist').value;
-                const album = document.getElementById('album').value;
-                const plays = parseInt(document.getElementById('plays').value) || 0;
-                const duration = document.getElementById('duration').value;
-
-                songsData.push({ title, artist, album, plays, duration });
-                updateDashboard();
-                document.getElementById('song-form').reset();
-            });
-
-            // 2. Integración con el Botón Spotify
-            const urlParams = new URLSearchParams(window.location.search);
-            const accessToken = urlParams.get('access_token');
-            const btnSpotifySync = document.getElementById('btn-spotify-sync') || document.getElementById('btn-spotify-login');
-
-btnSpotifySync?.addEventListener('click', () => {
-  if (accessToken) {
-    cargarTopSpotify(accessToken);
-  } else {
-    window.location.href = 'https://spotify-wrapped-app-bhh0.onrender.com/api/auth/spotify/login';
-  }
-});
-                }
-            });
-
-            // Si viene redirigido con el token de Spotify, rellenamos automáticamente
-            if (accessToken) {
-                cargarTopSpotify(accessToken);
-            }
-        });
-
-        // Inicializar gráfica Chart.js
-        function initChart() {
-            const ctx = document.getElementById('myChart').getContext('2d');
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: songsData.map(s => s.title),
-                    datasets: [{
-                        label: 'Reproducciones',
-                        data: songsData.map(s => s.plays),
-                        backgroundColor: '#1db954',
-                        borderColor: '#1ed760',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: '#b3b3b3' },
-                            grid: { color: '#282828' }
-                        },
-                        x: {
-                            ticks: { color: '#b3b3b3' },
-                            grid: { color: '#282828' }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: { color: '#ffffff' }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Renderizar la Tabla
-        function renderTable() {
-            const tbody = document.getElementById('songs-table-body');
-            tbody.innerHTML = '';
-            songsData.forEach(song => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><b>${song.title}</b></td>
-                    <td>${song.artist}</td>
-                    <td>${song.album}</td>
-                    <td>${Number(song.plays).toLocaleString()}</td>
-                    <td>${song.duration}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // Actualizar datos
-        function updateDashboard() {
-            renderTable();
-            myChart.data.labels = songsData.map(s => s.title);
-            myChart.data.datasets[0].data = songsData.map(s => s.plays);
-            myChart.update();
-        }
-
-        // Consulta a la API de Spotify
-        async function cargarTopSpotify(token) {
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/spotify/user-wrapped', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.topTracks && data.topTracks.length > 0) {
-                        // Rellenar automáticamente con las canciones reales recibidas de Spotify
-                        songsData = data.topTracks.slice(0, 5).map((track, i) => ({
-                            title: track.name,
-                            artist: track.artists[0].name,
-                            album: track.album.name,
-                            plays: Math.floor(Math.random() * 2000) + 1000 + (5 - i) * 500, // Simulación de reproducciones para la gráfica
-                            duration: `${(track.duration_ms / 60000).toFixed(1)} min`
-                        }));
-                        updateDashboard();
-                    }
-                }
-            } catch (err) {
-                console.error('Error al sincronizar Spotify:', err);
-            }
-        }
-    </script>
+    <!-- VINCULACIÓN ÚNICA A APP.JS -->
+    <script src="app.js"></script>
 </body>
 </html>
