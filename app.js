@@ -1,4 +1,4 @@
-const API_BASE = 'http://127.0.0.1:5000/api';
+const API_BASE = 'https://spotify-wrapped-app-bhh0.onrender.com/api';
 let chartInstance = null;
 let songsData = [];
 let editingSongId = null;
