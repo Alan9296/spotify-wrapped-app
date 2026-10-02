@@ -205,20 +205,28 @@ async function loadSpotifyWrapped(spotifyToken) {
 
     const data = await res.json();
 
-    // 1. Avatar e Información de usuario
-    const userImg = document.getElementById('wrapped-user-img');
-    if (userImg) {
-      const avatarUrl = data.user?.avatar || data.user?.images?.[0]?.url || 'https://via.placeholder.com/70?text=User';
-      userImg.src = avatarUrl;
-    }
+    // 1. Nombre de usuario (Soporta múltiples campos posibles)
+    const displayName = data.user?.displayName || 
+                        data.user?.display_name || 
+                        data.user?.name || 
+                        data.user?.id || 
+                        'Usuario';
 
     const userName = document.getElementById('wrapped-user-name');
     if (userName) {
-      const name = data.user?.displayName || data.user?.display_name || 'Usuario';
-      userName.innerText = `¡Hola, ${name}!`;
+      userName.innerText = `¡Hola, ${displayName}!`;
     }
 
-    // 2. Top Canciones (Soporta múltiples estructuras de la API)
+    // 2. Avatar de usuario (FallBack a SVG de DiceBear si no hay imagen de Spotify)
+    const userImg = document.getElementById('wrapped-user-img');
+    if (userImg) {
+      const avatarUrl = data.user?.avatar || 
+                        data.user?.images?.[0]?.url || 
+                        `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(displayName)}`;
+      userImg.src = avatarUrl;
+    }
+
+    // 3. Top Canciones (Manejo defensivo de title/name y artist/artists)
     const tracksList = document.getElementById('wrapped-tracks-list');
     if (tracksList && data.topTracks) {
       tracksList.innerHTML = data.topTracks.map(t => {
@@ -237,11 +245,11 @@ async function loadSpotifyWrapped(spotifyToken) {
       }).join('');
     }
 
-    // 3. Top Artistas (Manejo correcto de imágenes e iconografía)
+    // 4. Top Artistas
     const artistsContainer = document.getElementById('wrapped-artists-container');
     if (artistsContainer && data.topArtists) {
       artistsContainer.innerHTML = data.topArtists.map(a => {
-        const imgUrl = a.image || a.images?.[0]?.url || 'https://via.placeholder.com/40?text=🎵';
+        const imgUrl = a.image || a.images?.[0]?.url || 'https://api.dicebear.com/7.x/identicon/svg?seed=artist';
         const artistName = a.name || 'Artista';
         return `
           <div class="artist-card" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
@@ -252,17 +260,16 @@ async function loadSpotifyWrapped(spotifyToken) {
       }).join('');
     }
 
-    // 4. Géneros Musicales
+    // 5. Géneros Musicales
     const genresContainer = document.getElementById('wrapped-genres-container');
     if (genresContainer && data.topGenres) {
       genresContainer.innerHTML = data.topGenres.map(g => `<span class="genre-badge">${g}</span>`).join('');
     }
 
-    // 5. Tarjeta de Resumen
+    // 6. Tarjeta de Resumen
     const summaryTitle = document.getElementById('summary-user-title');
     if (summaryTitle) {
-      const name = data.user?.displayName || data.user?.display_name || 'Usuario';
-      summaryTitle.innerText = `Resumen de ${name}`;
+      summaryTitle.innerText = `Resumen de ${displayName}`;
     }
 
     const summaryContent = document.getElementById('summary-content');
@@ -391,9 +398,9 @@ function renderTable(songs) {
 
   songs.forEach(song => {
     const tr = document.createElement('tr');
-    const imageSrc = song.imageUrl || 'https://via.placeholder.com/45?text=🎵';
+    const imageSrc = song.imageUrl || 'https://api.dicebear.com/7.x/identicon/svg?seed=music';
     tr.innerHTML = `
-      <td><img src="${imageSrc}" class="album-cover" alt="Cover"></td>
+      <td><img src="${imageSrc}" class="album-cover" alt="Cover" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;"></td>
       <td>${song.title}</td>
       <td>${song.artist}</td>
       <td>${song.album}</td>
