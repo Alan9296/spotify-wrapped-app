@@ -257,13 +257,15 @@
             // 2. Integración con el Botón Spotify
             const urlParams = new URLSearchParams(window.location.search);
             const accessToken = urlParams.get('access_token');
-            const btnSpotifySync = document.getElementById('btn-spotify-sync');
+            const btnSpotifySync = document.getElementById('btn-spotify-sync') || document.getElementById('btn-spotify-login');
 
-            btnSpotifySync.addEventListener('click', () => {
-                if (accessToken) {
-                    cargarTopSpotify(accessToken);
-                } else {
-                    window.location.href = 'http://127.0.0.1:5000/api/auth/spotify/login';
+btnSpotifySync?.addEventListener('click', () => {
+  if (accessToken) {
+    cargarTopSpotify(accessToken);
+  } else {
+    window.location.href = 'https://spotify-wrapped-app-bhh0.onrender.com/api/auth/spotify/login';
+  }
+});
                 }
             });
 
