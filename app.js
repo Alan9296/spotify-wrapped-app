@@ -12,17 +12,21 @@ let guestSongs = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializar Swiper
-  swiperInstance = new Swiper('.mySwiper', {
-    pagination: { el: '.swiper-pagination', clickable: true },
-    keyboard: true
-  });
+  // Inicializar Swiper si el contenedor existe
+  if (document.querySelector('.mySwiper')) {
+    swiperInstance = new Swiper('.mySwiper', {
+      pagination: { el: '.swiper-pagination', clickable: true },
+      keyboard: true
+    });
+  }
 
   // Verificar si venimos del Login de Spotify con un token en la URL
   const urlParams = new URLSearchParams(window.location.search);
-const spotifyAccessToken = urlParams.get('access_token') || urlParams.get('spotify_access_token');
+  const spotifyAccessToken = urlParams.get('access_token') || urlParams.get('spotify_access_token');
 
   if (spotifyAccessToken) {
+    // Guardar el token para mantener la sesión activa
+    localStorage.setItem('token', spotifyAccessToken);
     // Limpiar URL
     window.history.replaceState({}, document.title, window.location.pathname);
     loadSpotifyWrapped(spotifyAccessToken);
@@ -30,37 +34,39 @@ const spotifyAccessToken = urlParams.get('access_token') || urlParams.get('spoti
     checkSession();
   }
 
-const spotifyBtn = document.getElementById('btn-spotify-login') || document.getElementById('btn-spotify-sync');
-if (spotifyBtn) {
-  spotifyBtn.addEventListener('click', () => {
+  const spotifyBtn = document.getElementById('btn-spotify-login') || document.getElementById('btn-spotify-sync');
+  spotifyBtn?.addEventListener('click', () => {
     window.location.href = 'https://spotify-wrapped-app-bhh0.onrender.com/api/auth/spotify/login';
   });
-}
 
   // Cerrar / Reabrir Wrapped
-  document.getElementById('btn-close-wrapped').addEventListener('click', closeWrapped);
-  document.getElementById('btn-continue-dashboard').addEventListener('click', closeWrapped);
-  document.getElementById('btn-reopen-wrapped').addEventListener('click', () => {
-    document.getElementById('wrapped-container').style.display = 'block';
+  document.getElementById('btn-close-wrapped')?.addEventListener('click', closeWrapped);
+  document.getElementById('btn-continue-dashboard')?.addEventListener('click', closeWrapped);
+  document.getElementById('btn-reopen-wrapped')?.addEventListener('click', () => {
+    const wrappedContainer = document.getElementById('wrapped-container');
+    if (wrappedContainer) wrappedContainer.style.display = 'block';
   });
 
   // Auth local
-  document.getElementById('toggle-auth-link').addEventListener('click', (e) => {
+  document.getElementById('toggle-auth-link')?.addEventListener('click', (e) => {
     e.preventDefault();
     isRegisterMode = !isRegisterMode;
-    document.getElementById('auth-form').innerHTML = isRegisterMode 
-      ? `<input type="email" id="auth-email" placeholder="Correo electrónico" required>
-         <input type="password" id="auth-password" placeholder="Contraseña" required>
-         <button type="submit">Registrarme</button>`
-      : `<input type="email" id="auth-email" placeholder="Correo electrónico" required>
-         <input type="password" id="auth-password" placeholder="Contraseña" required>
-         <button type="submit">Entrar al Dashboard</button>`;
+    const authForm = document.getElementById('auth-form');
+    if (authForm) {
+      authForm.innerHTML = isRegisterMode 
+        ? `<input type="email" id="auth-email" placeholder="Correo electrónico" required>
+           <input type="password" id="auth-password" placeholder="Contraseña" required>
+           <button type="submit">Registrarme</button>`
+        : `<input type="email" id="auth-email" placeholder="Correo electrónico" required>
+           <input type="password" id="auth-password" placeholder="Contraseña" required>
+           <button type="submit">Entrar al Dashboard</button>`;
+    }
   });
 
-  document.getElementById('auth-form').addEventListener('submit', async (e) => {
+  document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
+    const email = document.getElementById('auth-email')?.value;
+    const password = document.getElementById('auth-password')?.value;
     const endpoint = isRegisterMode ? '/auth/register' : '/auth/login';
 
     try {
@@ -84,20 +90,21 @@ if (spotifyBtn) {
     }
   });
 
-  document.getElementById('btn-guest-mode').addEventListener('click', () => {
+  document.getElementById('btn-guest-mode')?.addEventListener('click', () => {
     isGuest = true;
     checkSession();
   });
 
-  document.getElementById('btn-logout').addEventListener('click', () => {
+  document.getElementById('btn-logout')?.addEventListener('click', () => {
     localStorage.clear();
     isGuest = false;
     checkSession();
   });
 
   // Importar info desde Spotify por URL
-  document.getElementById('btn-fetch-spotify').addEventListener('click', async () => {
-    const url = document.getElementById('spotify-url').value;
+  document.getElementById('btn-fetch-spotify')?.addEventListener('click', async () => {
+    const urlInput = document.getElementById('spotify-url');
+    const url = urlInput ? urlInput.value : '';
     if (!url) return alert('Por favor pega un enlace de Spotify');
 
     try {
@@ -105,12 +112,12 @@ if (spotifyBtn) {
       const data = await res.json();
 
       if (res.ok) {
-        document.getElementById('title').value = data.title;
-        document.getElementById('artist').value = data.artist;
-        document.getElementById('album').value = data.album;
-        document.getElementById('plays').value = data.plays;
-        document.getElementById('duration').value = data.durationMinutes;
-        document.getElementById('image-url').value = data.imageUrl || '';
+        if (document.getElementById('title')) document.getElementById('title').value = data.title;
+        if (document.getElementById('artist')) document.getElementById('artist').value = data.artist;
+        if (document.getElementById('album')) document.getElementById('album').value = data.album;
+        if (document.getElementById('plays')) document.getElementById('plays').value = data.plays;
+        if (document.getElementById('duration')) document.getElementById('duration').value = data.durationMinutes;
+        if (document.getElementById('image-url')) document.getElementById('image-url').value = data.imageUrl || '';
       } else {
         alert(data.message || 'Error al obtener la información');
       }
@@ -121,16 +128,16 @@ if (spotifyBtn) {
 
   // Formulario canciones
   const form = document.getElementById('song-form');
-  form.addEventListener('submit', async (e) => {
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const songPayload = {
-      title: document.getElementById('title').value,
-      artist: document.getElementById('artist').value,
-      album: document.getElementById('album').value,
-      plays: Number(document.getElementById('plays').value),
-      durationMinutes: Number(document.getElementById('duration').value),
-      imageUrl: document.getElementById('image-url').value
+      title: document.getElementById('title')?.value || '',
+      artist: document.getElementById('artist')?.value || '',
+      album: document.getElementById('album')?.value || '',
+      plays: Number(document.getElementById('plays')?.value || 0),
+      durationMinutes: Number(document.getElementById('duration')?.value || 0),
+      imageUrl: document.getElementById('image-url')?.value || ''
     };
 
     if (isGuest) {
@@ -169,9 +176,9 @@ if (spotifyBtn) {
     }
   });
 
-  document.getElementById('btn-cancel-edit').addEventListener('click', resetFormState);
+  document.getElementById('btn-cancel-edit')?.addEventListener('click', resetFormState);
 
-  document.getElementById('search-input').addEventListener('input', (e) => {
+  document.getElementById('search-input')?.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase();
     const filtered = songsData.filter(s => 
       s.title.toLowerCase().includes(query) ||
@@ -182,7 +189,7 @@ if (spotifyBtn) {
     renderChart(filtered);
   });
 
-  document.getElementById('btn-export-csv').addEventListener('click', exportToCSV);
+  document.getElementById('btn-export-csv')?.addEventListener('click', exportToCSV);
 });
 
 // Cargar Wrapped de Spotify
@@ -196,36 +203,55 @@ async function loadSpotifyWrapped(spotifyToken) {
     if (!res.ok) return alert('Error al cargar datos de Spotify');
 
     // Popular slides del Wrapped
-    document.getElementById('wrapped-user-img').src = data.user.avatar;
-    document.getElementById('wrapped-user-name').innerText = `¡Hola, ${data.user.displayName}!`;
+    const userImg = document.getElementById('wrapped-user-img');
+    if (userImg) userImg.src = data.user?.avatar || '';
+
+    const userName = document.getElementById('wrapped-user-name');
+    if (userName) userName.innerText = `¡Hola, ${data.user?.displayName || 'Usuario'}!`;
 
     // Tracks
     const tracksList = document.getElementById('wrapped-tracks-list');
-    tracksList.innerHTML = data.topTracks.map(t => `<li><strong>${t.title}</strong> - ${t.artist}</li>`).join('');
+    if (tracksList && data.topTracks) {
+      tracksList.innerHTML = data.topTracks.map(t => `<li><strong>${t.title}</strong> - ${t.artist}</li>`).join('');
+    }
 
     // Artists
     const artistsContainer = document.getElementById('wrapped-artists-container');
-    artistsContainer.innerHTML = data.topArtists.map(a => `
-      <div class="artist-card">
-        <img src="${a.image}" alt="${a.name}">
-        <h4>${a.name}</h4>
-      </div>
-    `).join('');
+    if (artistsContainer && data.topArtists) {
+      artistsContainer.innerHTML = data.topArtists.map(a => `
+        <div class="artist-card">
+          <img src="${a.image}" alt="${a.name}">
+          <h4>${a.name}</h4>
+        </div>
+      `).join('');
+    }
 
     // Genres
     const genresContainer = document.getElementById('wrapped-genres-container');
-    genresContainer.innerHTML = data.topGenres.map(g => `<span class="genre-badge">${g}</span>`).join('');
+    if (genresContainer && data.topGenres) {
+      genresContainer.innerHTML = data.topGenres.map(g => `<span class="genre-badge">${g}</span>`).join('');
+    }
 
     // Summary Card
-    document.getElementById('summary-user-title').innerText = `Resumen de ${data.user.displayName}`;
-    document.getElementById('summary-content').innerHTML = `
-      <p style="margin-top: 10px;">👑 <strong>Top Artista:</strong> ${data.topArtists[0]?.name || 'N/A'}</p>
-      <p style="margin-top: 5px;">🔥 <strong>Top Canción:</strong> ${data.topTracks[0]?.title || 'N/A'}</p>
-    `;
+    const summaryTitle = document.getElementById('summary-user-title');
+    if (summaryTitle) summaryTitle.innerText = `Resumen de ${data.user?.displayName || 'Usuario'}`;
 
-    document.getElementById('auth-container').style.display = 'none';
-    document.getElementById('wrapped-container').style.display = 'block';
-    document.getElementById('btn-reopen-wrapped').style.display = 'inline-block';
+    const summaryContent = document.getElementById('summary-content');
+    if (summaryContent) {
+      summaryContent.innerHTML = `
+        <p style="margin-top: 10px;">👑 <strong>Top Artista:</strong> ${data.topArtists?.[0]?.name || 'N/A'}</p>
+        <p style="margin-top: 5px;">🔥 <strong>Top Canción:</strong> ${data.topTracks?.[0]?.title || 'N/A'}</p>
+      `;
+    }
+
+    const authContainer = document.getElementById('auth-container');
+    if (authContainer) authContainer.style.display = 'none';
+
+    const wrappedContainer = document.getElementById('wrapped-container');
+    if (wrappedContainer) wrappedContainer.style.display = 'block';
+
+    const reopenBtn = document.getElementById('btn-reopen-wrapped');
+    if (reopenBtn) reopenBtn.style.display = 'inline-block';
 
   } catch (err) {
     console.error(err);
@@ -234,29 +260,38 @@ async function loadSpotifyWrapped(spotifyToken) {
 }
 
 function closeWrapped() {
-  document.getElementById('wrapped-container').style.display = 'none';
-  document.getElementById('dashboard-container').style.display = 'block';
-  document.getElementById('user-badge').innerText = 'Usuario Autenticado vía Spotify';
+  const wrappedContainer = document.getElementById('wrapped-container');
+  if (wrappedContainer) wrappedContainer.style.display = 'none';
+
+  const dashboardContainer = document.getElementById('dashboard-container');
+  if (dashboardContainer) dashboardContainer.style.display = 'block';
+
+  const userBadge = document.getElementById('user-badge');
+  if (userBadge) userBadge.innerText = 'Usuario Autenticado vía Spotify';
 }
 
 function checkSession() {
   const token = localStorage.getItem('token');
   const email = localStorage.getItem('email');
 
+  const authContainer = document.getElementById('auth-container');
+  const dashboardContainer = document.getElementById('dashboard-container');
+  const userBadge = document.getElementById('user-badge');
+
   if (token || isGuest) {
-    document.getElementById('auth-container').style.display = 'none';
-    document.getElementById('dashboard-container').style.display = 'block';
+    if (authContainer) authContainer.style.display = 'none';
+    if (dashboardContainer) dashboardContainer.style.display = 'block';
 
     if (isGuest) {
-      document.getElementById('user-badge').innerText = 'Modo Invitado (Vista Previa)';
+      if (userBadge) userBadge.innerText = 'Modo Invitado (Vista Previa)';
       renderDashboard(guestSongs);
     } else {
-      document.getElementById('user-badge').innerText = `Usuario: ${email}`;
+      if (userBadge) userBadge.innerText = email ? `Usuario: ${email}` : 'Usuario Autenticado';
       fetchSongs();
     }
   } else {
-    document.getElementById('auth-container').style.display = 'block';
-    document.getElementById('dashboard-container').style.display = 'none';
+    if (authContainer) authContainer.style.display = 'block';
+    if (dashboardContainer) dashboardContainer.style.display = 'none';
   }
 }
 
@@ -286,18 +321,27 @@ function renderDashboard(songs) {
 }
 
 function updateKPIs(songs) {
-  const totalSongs = songs.length;
-  const totalPlays = songs.reduce((sum, s) => sum + s.plays, 0);
-  const avgPlays = totalSongs > 0 ? Math.round(totalPlays / totalSongs) : 0;
-  const totalDuration = songs.reduce((sum, s) => sum + s.durationMinutes, 0);
+  if (!Array.isArray(songs)) return;
 
-  document.getElementById('kpi-total-songs').innerText = totalSongs;
-  document.getElementById('kpi-avg-plays').innerText = avgPlays.toLocaleString();
-  document.getElementById('kpi-total-duration').innerText = `${totalDuration.toFixed(1)} min`;
+  const totalSongs = songs.length;
+  const totalPlays = songs.reduce((sum, s) => sum + (s.plays || 0), 0);
+  const avgPlays = totalSongs > 0 ? Math.round(totalPlays / totalSongs) : 0;
+  const totalDuration = songs.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+
+  const kpiTotalSongs = document.getElementById('kpi-total-songs');
+  if (kpiTotalSongs) kpiTotalSongs.innerText = totalSongs;
+
+  const kpiAvgPlays = document.getElementById('kpi-avg-plays');
+  if (kpiAvgPlays) kpiAvgPlays.innerText = avgPlays.toLocaleString();
+
+  const kpiTotalDuration = document.getElementById('kpi-total-duration');
+  if (kpiTotalDuration) kpiTotalDuration.innerText = `${totalDuration.toFixed(1)} min`;
 }
 
 function renderTable(songs) {
   const tbody = document.getElementById('songs-table-body');
+  if (!tbody || !Array.isArray(songs)) return;
+
   tbody.innerHTML = '';
 
   songs.forEach(song => {
@@ -308,7 +352,7 @@ function renderTable(songs) {
       <td>${song.title}</td>
       <td>${song.artist}</td>
       <td>${song.album}</td>
-      <td>${song.plays.toLocaleString()}</td>
+      <td>${(song.plays || 0).toLocaleString()}</td>
       <td>${song.durationMinutes} min</td>
       <td>
         <button onclick="editSong('${song._id}')" style="background: #eab308; color: black; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px; font-weight: bold;">Editar</button>
@@ -345,34 +389,47 @@ function editSong(id) {
   if (!song) return;
 
   editingSongId = id;
-  document.getElementById('title').value = song.title;
-  document.getElementById('artist').value = song.artist;
-  document.getElementById('album').value = song.album;
-  document.getElementById('plays').value = song.plays;
-  document.getElementById('duration').value = song.durationMinutes;
-  document.getElementById('image-url').value = song.imageUrl || '';
+  if (document.getElementById('title')) document.getElementById('title').value = song.title;
+  if (document.getElementById('artist')) document.getElementById('artist').value = song.artist;
+  if (document.getElementById('album')) document.getElementById('album').value = song.album;
+  if (document.getElementById('plays')) document.getElementById('plays').value = song.plays;
+  if (document.getElementById('duration')) document.getElementById('duration').value = song.durationMinutes;
+  if (document.getElementById('image-url')) document.getElementById('image-url').value = song.imageUrl || '';
 
   const submitBtn = document.getElementById('btn-submit-form');
-  submitBtn.innerText = 'Actualizar Canción';
-  submitBtn.style.background = '#eab308';
-  submitBtn.style.color = 'black';
-  document.getElementById('btn-cancel-edit').style.display = 'block';
+  if (submitBtn) {
+    submitBtn.innerText = 'Actualizar Canción';
+    submitBtn.style.background = '#eab308';
+    submitBtn.style.color = 'black';
+  }
+  const cancelBtn = document.getElementById('btn-cancel-edit');
+  if (cancelBtn) cancelBtn.style.display = 'block';
 }
 
 function resetFormState() {
   editingSongId = null;
-  document.getElementById('song-form').reset();
-  document.getElementById('image-url').value = '';
+  const form = document.getElementById('song-form');
+  if (form) form.reset();
+
+  const imgUrl = document.getElementById('image-url');
+  if (imgUrl) imgUrl.value = '';
 
   const submitBtn = document.getElementById('btn-submit-form');
-  submitBtn.innerText = 'Guardar Canción';
-  submitBtn.style.background = '#1db954';
-  submitBtn.style.color = 'white';
-  document.getElementById('btn-cancel-edit').style.display = 'none';
+  if (submitBtn) {
+    submitBtn.innerText = 'Guardar Canción';
+    submitBtn.style.background = '#1db954';
+    submitBtn.style.color = 'white';
+  }
+
+  const cancelBtn = document.getElementById('btn-cancel-edit');
+  if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
 function renderChart(songs) {
-  const ctx = document.getElementById('songsChart').getContext('2d');
+  const canvas = document.getElementById('songsChart');
+  if (!canvas || !Array.isArray(songs)) return;
+
+  const ctx = canvas.getContext('2d');
 
   if (chartInstance) {
     chartInstance.destroy();
