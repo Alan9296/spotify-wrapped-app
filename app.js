@@ -30,10 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSession();
   }
 
-  // Redirigir a Spotify Login
-  document.getElementById('btn-spotify-login').addEventListener('click', () => {
-    window.location.href = `${API_BASE}/auth/spotify/login`;
-  });
+document.getElementById('btn-spotify-login').addEventListener('click', () => {
+  window.location.href = 'https://spotify-wrapped-app-bhh0.onrender.com/api/auth/spotify/login';
+});
 
   // Cerrar / Reabrir Wrapped
   document.getElementById('btn-close-wrapped').addEventListener('click', closeWrapped);
