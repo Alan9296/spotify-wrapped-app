@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Verificar si venimos del Login de Spotify con un token en la URL
   const urlParams = new URLSearchParams(window.location.search);
-  const spotifyAccessToken = urlParams.get('spotify_access_token');
+const spotifyAccessToken = urlParams.get('access_token') || urlParams.get('spotify_access_token');
 
   if (spotifyAccessToken) {
     // Limpiar URL
